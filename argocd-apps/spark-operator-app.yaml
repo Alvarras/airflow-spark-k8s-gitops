@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spark-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://kubeflow.github.io/spark-operator'
+    targetRevision: 2.3.0
+    chart: spark-operator
+    helm:
+      # Mengambil custom values dari repositori Git Anda sendiri
+      valueFiles:
+        - https://github.com/Alvarras/airflow-spark-k8s-gitops/main/infrastructure/spark-operator/values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: spark-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,6 @@
+spark:
+  # List namespace di mana Spark job diizinkan berjalan
+  jobNamespaces:
+    - spark-jobs
+    - airflow
+    - default
