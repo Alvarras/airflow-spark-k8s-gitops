@@ -11,7 +11,7 @@ spec:
     chart: airflow
     helm:
       valueFiles:
-        - https://github.com/Alvarras/airflow-spark-k8s-gitops/main/infrastructure/airflow/values.yaml
+        - https://raw.githubusercontent.com/Alvarras/airflow-spark-k8s-gitops/main/infrastructure/airflow/values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: airflow

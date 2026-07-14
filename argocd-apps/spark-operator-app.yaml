@@ -12,7 +12,7 @@ spec:
     helm:
       # Mengambil custom values dari repositori Git Anda sendiri
       valueFiles:
-        - https://github.com/Alvarras/airflow-spark-k8s-gitops/main/infrastructure/spark-operator/values.yaml
+        - https://raw.githubusercontent.com/Alvarras/airflow-spark-k8s-gitops/main/infrastructure/spark-operator/values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: spark-operator
