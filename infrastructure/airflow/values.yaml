@@ -11,3 +11,11 @@ dags:
 
 # Pastikan eksekutor menggunakan Kubernetes
 executor: "KubernetesExecutor"
+
+# Fix for ArgoCD: Disable Helm hooks for jobs so they run as normal resources
+createUserJob:
+  useHelmHooks: false
+  applyCustomEnv: false
+migrateDatabaseJob:
+  useHelmHooks: false
+  applyCustomEnv: false
