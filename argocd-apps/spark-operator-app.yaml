@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: 'https://kubeflow.github.io/spark-operator'
-    targetRevision: 2.3.0
+    targetRevision: 3.0.0
     chart: spark-operator
     helm:
       # Mengambil custom values dari repositori Git Anda sendiri
