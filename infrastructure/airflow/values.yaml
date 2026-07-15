@@ -25,3 +25,12 @@ migrateDatabaseJob:
   jobAnnotations:
     "argocd.argoproj.io/hook": Sync
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
+
+# Ekspos Airflow UI melalui NodePort 30000
+webserver:
+  service:
+    type: NodePort
+    ports:
+      - name: airflow-ui
+        port: 8080
+        nodePort: 30000
