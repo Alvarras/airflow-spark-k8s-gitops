@@ -5,13 +5,16 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: 'https://airflow.apache.org'
-    targetRevision: 1.22.0 # Sesuaikan dengan versi Helm chart Airflow terbaru
-    chart: airflow
-    helm:
-      valueFiles:
-        - https://raw.githubusercontent.com/Alvarras/airflow-spark-k8s-gitops/main/infrastructure/airflow/values.yaml
+  sources:
+    - repoURL: 'https://airflow.apache.org'
+      targetRevision: 1.22.0 # Sesuaikan dengan versi Helm chart Airflow terbaru
+      chart: airflow
+      helm:
+        valueFiles:
+          - $values/infrastructure/airflow/values.yaml
+    - repoURL: 'https://github.com/Alvarras/airflow-spark-k8s-gitops.git'
+      targetRevision: main
+      ref: values
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: airflow

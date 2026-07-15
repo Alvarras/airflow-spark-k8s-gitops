@@ -5,14 +5,17 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: 'https://kubeflow.github.io/spark-operator'
-    targetRevision: 2.3.0
-    chart: spark-operator
-    helm:
-      # Mengambil custom values dari repositori Git Anda sendiri
-      valueFiles:
-        - https://raw.githubusercontent.com/Alvarras/airflow-spark-k8s-gitops/main/infrastructure/spark-operator/values.yaml
+  sources:
+    - repoURL: 'https://kubeflow.github.io/spark-operator'
+      targetRevision: 2.3.0
+      chart: spark-operator
+      helm:
+        # Mengambil custom values dari repositori Git Anda sendiri
+        valueFiles:
+          - $values/infrastructure/spark-operator/values.yaml
+    - repoURL: 'https://github.com/Alvarras/airflow-spark-k8s-gitops.git'
+      targetRevision: main
+      ref: values
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: spark-operator
