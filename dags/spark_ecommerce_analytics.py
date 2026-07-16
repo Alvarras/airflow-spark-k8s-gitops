@@ -9,7 +9,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime.now() - timedelta(days=1),
+    'start_date': datetime(2026, 7, 15),
     'email': ['airflow@example.com'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -44,7 +44,7 @@ def done():
 # ---------------------------------------------------------------------------
 with DAG(
     dag_id='spark_ecommerce_analytics',
-    start_date=datetime.now() - timedelta(days=1),
+    start_date=datetime(2026, 7, 15),
     default_args=default_args,
     schedule=None,      # Manual trigger only
     catchup=False,
