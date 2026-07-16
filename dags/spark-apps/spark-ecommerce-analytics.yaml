@@ -1,0 +1,156 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: spark-ecommerce-analytics
+  # Namespace harus sama dengan namespace Airflow
+  namespace: airflow
+  labels:
+    app: spark-ecommerce-analytics
+    version: "1.0.0"
+    team: data-engineering
+spec:
+  # Python job — berbeda dengan spark-pi yang menggunakan Scala
+  type: Python
+
+  # Mode cluster: driver berjalan di dalam Kubernetes pod
+  mode: cluster
+
+  # Menggunakan image Spark yang sama dengan spark-pi
+  image: docker.io/library/spark:4.0.0
+  imagePullPolicy: IfNotPresent
+
+  # Script Python diambil dari S3/MinIO bucket 'airflow'
+  # Upload file ini ke MinIO sebelum menjalankan DAG:
+  #   mc cp dags/spark-apps/ecommerce_analytics.py myminio/airflow/spark-scripts/
+  mainApplicationFile: "s3a://airflow/spark-scripts/ecommerce_analytics.py"
+
+  sparkVersion: "4.0.0"
+
+  # ── Spark Configuration ──────────────────────────────────────────────────
+  sparkConf:
+    # Dependencies — diunduh otomatis dari Maven Central saat pertama kali jalan
+    # PostgreSQL JDBC + Hadoop-AWS + AWS SDK Bundle untuk S3A
+    "spark.jars.packages": >-
+      org.postgresql:postgresql:42.7.3,
+      org.apache.hadoop:hadoop-aws:3.3.4,
+      com.amazonaws:aws-java-sdk-bundle:1.12.262
+
+    # S3A / MinIO Configuration — nilai dibaca dari env vars (K8s Secret)
+    "spark.hadoop.fs.s3a.impl":                    "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "spark.hadoop.fs.s3a.path.style.access":       "true"
+    "spark.hadoop.fs.s3a.connection.ssl.enabled":  "true"
+
+    # Adaptive Query Execution untuk optimasi performa
+    "spark.sql.adaptive.enabled":                           "true"
+    "spark.sql.adaptive.coalescePartitions.enabled":        "true"
+
+    # Lokasi Maven repo lokal di dalam pod (agar tidak tergantung internet tiap run)
+    "spark.jars.ivy":  "/tmp/.ivy2"
+
+  # ── Environment Variables dari K8s Secret ───────────────────────────────
+  # Secret 'ecommerce-pipeline-secret' di-apply manual ke namespace airflow:
+  #   kubectl create secret generic ecommerce-pipeline-secret \
+  #     --from-literal=S3_ACCESS_KEY="..." \
+  #     --from-literal=S3_SECRET_KEY="..." \
+  #     --from-literal=S3_ENDPOINT="https://s3.rivqi.dtc.best/" \
+  #     --from-literal=S3_BUCKET="airflow" \
+  #     --from-literal=S3_FILE="ecommerce_data__matt2434_2019-Dec-Cleaned.csv" \
+  #     --from-literal=DB_HOST="10.5.0.35" \
+  #     --from-literal=DB_USER="dbadmin" \
+  #     --from-literal=DB_PASSWORD="..." \
+  #     --from-literal=DB_PORT="5432" \
+  #     --from-literal=DB_NAME="dbadmin" \
+  #     -n airflow
+
+  # ── Driver Configuration ─────────────────────────────────────────────────
+  driver:
+    labels:
+      version: "1.0.0"
+      spark-role: driver
+      app: spark-ecommerce-analytics
+    cores: 1
+    memory: "1536m"
+    serviceAccount: spark-operator-spark
+
+    # Inject semua credentials dari Secret ke environment driver pod
+    envFrom:
+      - secretRef:
+          name: ecommerce-pipeline-secret
+
+    # Tambahan env individual untuk S3A config (Spark membaca via env juga)
+    env:
+      - name: SPARK_HADOOP_FS_S3A_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: ecommerce-pipeline-secret
+            key: S3_ACCESS_KEY
+      - name: SPARK_HADOOP_FS_S3A_SECRET_KEY
+        valueFrom:
+          secretKeyRef:
+            name: ecommerce-pipeline-secret
+            key: S3_SECRET_KEY
+      - name: SPARK_HADOOP_FS_S3A_ENDPOINT
+        valueFrom:
+          secretKeyRef:
+            name: ecommerce-pipeline-secret
+            key: S3_ENDPOINT
+
+    # Security context — identik dengan spark-pi.yaml (non-root, drop ALL)
+    securityContext:
+      capabilities:
+        drop:
+          - ALL
+      runAsGroup: 185
+      runAsUser: 185
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: RuntimeDefault
+
+  # ── Executor Configuration ───────────────────────────────────────────────
+  executor:
+    labels:
+      version: "1.0.0"
+      spark-role: executor
+      app: spark-ecommerce-analytics
+    instances: 2
+    cores: 1
+    memory: "2g"
+
+    # Executor pod juga butuh credentials untuk baca S3 dan tulis PostgreSQL
+    envFrom:
+      - secretRef:
+          name: ecommerce-pipeline-secret
+
+    env:
+      - name: SPARK_HADOOP_FS_S3A_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: ecommerce-pipeline-secret
+            key: S3_ACCESS_KEY
+      - name: SPARK_HADOOP_FS_S3A_SECRET_KEY
+        valueFrom:
+          secretKeyRef:
+            name: ecommerce-pipeline-secret
+            key: S3_SECRET_KEY
+      - name: SPARK_HADOOP_FS_S3A_ENDPOINT
+        valueFrom:
+          secretKeyRef:
+            name: ecommerce-pipeline-secret
+            key: S3_ENDPOINT
+
+    # Security context — identik dengan spark-pi.yaml
+    securityContext:
+      capabilities:
+        drop:
+          - ALL
+      runAsGroup: 185
+      runAsUser: 185
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: RuntimeDefault
+
+  # ── Restart Policy ───────────────────────────────────────────────────────
+  restartPolicy:
+    type: Never
