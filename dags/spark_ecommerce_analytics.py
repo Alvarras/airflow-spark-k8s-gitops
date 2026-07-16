@@ -65,15 +65,50 @@ with DAG(
         python_callable=startBatch,
     )
 
-    spark_ecommerce_task = SparkKubernetesOperator(
+    def run_spark_operator(**kwargs):
+        import traceback
+        try:
+            from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
+            op = SparkKubernetesOperator(
+                task_id='spark_ecommerce_etl_inner',
+                namespace='airflow',
+                application_file=os.path.join(DAG_DIR, 'spark-apps', 'spark-ecommerce-analytics.yaml'),
+                kubernetes_conn_id='kubernetes_default',
+                poll_interval=10,
+                startup_timeout_seconds=300,
+            )
+            # Jalankan operator secara terprogram
+            return op.execute(context=kwargs)
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            try:
+                import psycopg2
+                conn = psycopg2.connect(
+                    host='10.5.0.35',
+                    database='dbadmin',
+                    user='dbadmin',
+                    password='P@ssw0rd123',
+                    port='5432'
+                )
+                cur = conn.cursor()
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS etl_error_log (
+                        id SERIAL PRIMARY KEY,
+                        error_message TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+                cur.execute("INSERT INTO etl_error_log (error_message) VALUES (%s);", (err_msg,))
+                conn.commit()
+                cur.close()
+                conn.close()
+            except Exception as db_err:
+                print(f"Failed to log exception to Postgres: {db_err}")
+            raise e
+
+    spark_ecommerce_task = PythonOperator(
         task_id='spark_ecommerce_etl',
-        namespace='airflow',
-        # Path absolut untuk menghindari error file not found
-        application_file=os.path.join(DAG_DIR, 'spark-apps', 'spark-ecommerce-analytics.yaml'),
-        kubernetes_conn_id='kubernetes_default',
-        # Polling interval & timeout untuk job yang memproses 170k+ baris
-        poll_interval=10,
-        startup_timeout_seconds=300,
+        python_callable=run_spark_operator,
     )
 
     done_task = PythonOperator(
