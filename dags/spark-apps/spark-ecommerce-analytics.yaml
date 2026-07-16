@@ -62,7 +62,6 @@ spec:
   driver:
     labels:
       version: "1.0.0"
-      spark-role: driver
       app: spark-ecommerce-analytics
     cores: 1
     memory: "1536m"
@@ -107,7 +106,6 @@ spec:
   executor:
     labels:
       version: "1.0.0"
-      spark-role: executor
       app: spark-ecommerce-analytics
     instances: 2
     cores: 1
