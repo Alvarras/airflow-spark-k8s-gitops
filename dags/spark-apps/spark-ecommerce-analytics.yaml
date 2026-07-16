@@ -29,11 +29,7 @@ spec:
   # ── Spark Configuration ──────────────────────────────────────────────────
   sparkConf:
     # Dependencies — diunduh otomatis dari Maven Central saat pertama kali jalan
-    # PostgreSQL JDBC + Hadoop-AWS + AWS SDK Bundle untuk S3A
-    "spark.jars.packages": >-
-      org.postgresql:postgresql:42.7.3,
-      org.apache.hadoop:hadoop-aws:3.3.4,
-      com.amazonaws:aws-java-sdk-bundle:1.12.262
+    "spark.jars.packages": "org.postgresql:postgresql:42.7.3,org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262"
 
     # S3A / MinIO Configuration — nilai dibaca dari env vars (K8s Secret)
     "spark.hadoop.fs.s3a.impl":                    "org.apache.hadoop.fs.s3a.S3AFileSystem"
